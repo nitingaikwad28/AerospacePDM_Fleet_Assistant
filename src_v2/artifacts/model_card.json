@@ -1,6 +1,6 @@
 {
   "iforest": {
-    "trained_at_utc": "2026-07-06T14:09:46+00:00",
+    "trained_at_utc": "2026-07-07T13:34:14+00:00",
     "components": [
       "bogie",
       "brakes",
@@ -39,7 +39,7 @@
     }
   },
   "rf": {
-    "trained_at_utc": "2026-07-06T14:09:47+00:00",
+    "trained_at_utc": "2026-07-07T13:34:14+00:00",
     "components": [
       "bogie",
       "brakes",

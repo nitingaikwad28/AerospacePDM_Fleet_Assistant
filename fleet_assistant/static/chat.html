@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>FleetGuard AI - Fleet Assistant</title>
+<style>
+  :root {
+    --navy: #0B1E3D; --steel: #4A6FA5; --ice: #E9EFF7; --charcoal: #1B2733;
+    --mute: #5B6B7C; --amber: #F5A623; --teal: #2E8B7C;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: -apple-system, "Segoe UI", Arial, sans-serif;
+    background: var(--navy); color: var(--charcoal); height: 100vh; display: flex;
+    flex-direction: column;
+  }
+  header {
+    padding: 18px 24px; color: #fff; display: flex; align-items: center;
+    justify-content: space-between;
+  }
+  header h1 { font-size: 20px; margin: 0; letter-spacing: 0.5px; }
+  header .tagline { font-size: 12px; color: #9FB3C8; margin-top: 2px; }
+  #status { font-size: 12px; padding: 4px 10px; border-radius: 12px; }
+  #status.up { background: var(--teal); color: #fff; }
+  #status.down { background: var(--amber); color: var(--navy); }
+  #chat-panel {
+    flex: 1; background: #fff; margin: 0 16px 16px 16px; border-radius: 12px 12px 0 0;
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  #messages { flex: 1; overflow-y: auto; padding: 20px; }
+  .msg { max-width: 75%; margin-bottom: 14px; line-height: 1.5; font-size: 14.5px; white-space: pre-wrap; }
+  .msg.user { margin-left: auto; background: var(--ice); color: var(--navy); padding: 10px 14px; border-radius: 12px 12px 2px 12px; }
+  .msg.assistant { margin-right: auto; background: #F6F8FA; color: var(--charcoal); padding: 10px 14px; border-radius: 12px 12px 12px 2px; border: 1px solid #E2E8F0; }
+  .msg .src { display:block; font-size: 10px; color: var(--mute); margin-top: 6px; font-style: italic; }
+  #suggestions { padding: 10px 20px; display: flex; gap: 8px; flex-wrap: wrap; border-top: 1px solid #E2E8F0; }
+  .chip { background: var(--ice); color: var(--navy); border: none; border-radius: 14px; padding: 6px 12px; font-size: 12.5px; cursor: pointer; }
+  .chip:hover { background: #D9E4F2; }
+  #input-row { display: flex; padding: 14px 20px; border-top: 1px solid #E2E8F0; gap: 10px; }
+  #input-row input { flex: 1; border: 1px solid #DCE4EE; border-radius: 8px; padding: 10px 12px; font-size: 14px; }
+  #input-row button { background: var(--amber); color: var(--navy); border: none; border-radius: 8px; padding: 10px 20px; font-weight: bold; cursor: pointer; font-size: 14px; }
+  #input-row button:hover { opacity: 0.9; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>FLEETGUARD AI &mdash; Fleet Assistant</h1>
+    <div class="tagline">Ask about fleet health, priorities, and maintenance history &mdash; read-only, human confirms all actions</div>
+  </div>
+  <div id="status">checking...</div>
+</header>
+
+<div id="chat-panel">
+  <div id="messages"></div>
+  <div id="suggestions">
+    <button class="chip" data-q="give me a fleet summary">Fleet summary</button>
+    <button class="chip" data-q="what needs attention this week">Top priority</button>
+    <button class="chip" data-q="why is AC-014 flagged">Why is AC-014 flagged?</button>
+    <button class="chip" data-q="has this happened before on other landing_gear">Similar incidents</button>
+    <button class="chip" data-q="work order for AC-014">Work order status</button>
+  </div>
+  <div id="input-row">
+    <input id="input" type="text" placeholder="Ask about the fleet..." autocomplete="off">
+    <button id="send">Send</button>
+  </div>
+</div>
+
+<script>
+const messagesEl = document.getElementById('messages');
+const inputEl = document.getElementById('input');
+const statusEl = document.getElementById('status');
+
+function addMessage(text, who, source) {
+  const div = document.createElement('div');
+  div.className = 'msg ' + who;
+  div.textContent = text;
+  if (source) {
+    const tag = document.createElement('span');
+    tag.className = 'src';
+    tag.textContent = who === 'assistant' ? ('source: ' + source) : '';
+    div.appendChild(tag);
+  }
+  messagesEl.appendChild(div);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+async function checkStatus() {
+  try {
+    const r = await fetch('/api/status');
+    const data = await r.json();
+    statusEl.textContent = data.llm_available ? 'LLM connected' : 'template mode (no LLM)';
+    statusEl.className = data.llm_available ? 'up' : 'down';
+  } catch (e) {
+    statusEl.textContent = 'offline';
+    statusEl.className = 'down';
+  }
+}
+
+async function sendMessage(text) {
+  if (!text.trim()) return;
+  addMessage(text, 'user');
+  inputEl.value = '';
+  try {
+    const r = await fetch('/api/chat', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({message: text})
+    });
+    const data = await r.json();
+    addMessage(data.text, 'assistant', data.source);
+  } catch (e) {
+    addMessage('Could not reach the assistant server.', 'assistant', 'error');
+  }
+}
+
+document.getElementById('send').addEventListener('click', () => sendMessage(inputEl.value));
+inputEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendMessage(inputEl.value); });
+document.querySelectorAll('.chip').forEach(btn => {
+  btn.addEventListener('click', () => sendMessage(btn.dataset.q));
+});
+
+addMessage('Hi, I\'m the FleetGuard AI Fleet Assistant. Ask me anything about the fleet\'s health, priorities, or maintenance history.', 'assistant', null);
+checkStatus();
+</script>
+
+</body>
+</html>

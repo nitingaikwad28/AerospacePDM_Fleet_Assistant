@@ -23,4 +23,52 @@ Prerequisites: Python 3.10+ with pip.
 
 Outputs land in outputs_v2/ (dashboard_v2.html, fleet_status_v2.csv,
 model_metrics_v2.json, work_orders_v2.json) and documentation is at
-outputs_v2/code_documentation_v2.pdf.
+outputs_v2/code_documentation_v2.pdf (also see code_documentation_v3.pdf for a
+from-scratch beginner guide, and FleetGuard_AI_Architecture.pdf for the pipeline
+diagram).
+
+
+Steps to run the Fleet Assistant (conversational chat layer)
+====================================================
+
+Prerequisite: run steps 1-4 above at least once, so outputs_v2/ has real data
+for the assistant to read.
+
+1. Move into the fleet_assistant directory and install its dependencies
+   cd fleet_assistant
+   pip install -r requirements_assistant.txt
+
+2. (Optional, for natural-language phrasing instead of plain templates)
+   Install Ollama separately (https://ollama.com) and pull a small model:
+   ollama pull llama3.2
+   Not required - the assistant works fully without it, just with plainer
+   wording ("template mode").
+
+   Performance note: on CPU-only hardware (no GPU), expect roughly 3-10 seconds
+   per LLM-phrased reply - measured at ~10 tokens/second on a typical laptop CPU.
+   This is the local model's generation speed, not a bug. For faster replies:
+     - use a smaller model, e.g. "ollama pull llama3.2:1b", or
+     - skip Ollama entirely - template mode answers instantly (same underlying
+       data, plainer wording).
+   See outputs_v2/Fleet_Assistant_Documentation.pdf section 6 for the full
+   performance-tuning notes (what was measured and why the defaults are set
+   the way they are in fleet_assistant/config.py).
+
+3a. Terminal chat
+    python chat_cli.py
+
+3b. Web chat (alternative to 3a - either works, pick one)
+    python chat_web.py
+    then open http://localhost:5000 in a browser
+
+4. Run the assistant's own unit tests
+   python -m unittest tests.test_tools tests.test_agent -v
+
+Example questions to try:
+  "give me a fleet summary"
+  "what needs attention this week"
+  "why is AC-014 flagged"
+  "has this happened before on other landing_gear"
+  "work order for AC-014"
+
+Full architecture + sequence diagram: outputs_v2/Fleet_Assistant_Documentation.pdf

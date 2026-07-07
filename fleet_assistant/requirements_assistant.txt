@@ -1,0 +1,7 @@
+# Fleet Assistant dependencies, in addition to src_v2/requirements_v2.txt (pandas is
+# shared with the core pipeline). No paid API - Ollama (optional, free, local) is called
+# over plain HTTP via `requests`; if it's not running, the assistant falls back to
+# deterministic templates automatically.
+flask>=2.2
+requests>=2.28
+pandas>=2.0
